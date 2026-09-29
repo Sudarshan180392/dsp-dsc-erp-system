@@ -339,3 +339,26 @@ CREATE POLICY "superadmin_all_weekly_logs" ON weekly_logs
 
 CREATE POLICY "superadmin_all_log_audit_history" ON log_audit_history
     FOR ALL USING ((SELECT role FROM profiles WHERE id = auth.uid()) = 'SUPERADMIN');
+
+-- ==========================================
+-- 11. syllabus_topics
+-- ==========================================
+CREATE TABLE IF NOT EXISTS syllabus_topics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    faculty_id UUID REFERENCES faculty_roster(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL,
+    topic_name TEXT NOT NULL,
+    estimated_classes INTEGER DEFAULT 2,
+    order_index INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED')),
+    completed_week INTEGER,
+    completed_at TIMESTAMPTZ,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE syllabus_topics ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "service_role_all_syllabus_topics" ON syllabus_topics FOR ALL USING (true);
+

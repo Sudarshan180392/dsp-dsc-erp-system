@@ -17,6 +17,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { AdminPermissions } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 interface AdminSidebarProps {
   role: string;
@@ -54,12 +55,16 @@ export default function AdminSidebar({ role, fullName, permissions }: AdminSideb
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
+      try {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      } catch (e) {}
       await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/faculty-session", { method: "DELETE" });
     } catch (e) {
       console.error("Logout error", e);
     } finally {
-      router.push("/login");
-      router.refresh();
+      window.location.href = "/login";
     }
   };
 
