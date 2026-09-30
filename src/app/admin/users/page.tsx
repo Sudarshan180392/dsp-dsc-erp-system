@@ -191,7 +191,13 @@ export default function UserManagementPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Failed to save user");
+
+      if (editingUser) {
+        setUsers((prev) => prev.map((u) => u.id === editingUser.id ? { ...u, ...data } : u));
+      } else {
+        setUsers((prev) => [data, ...prev.filter((u) => u.email.toLowerCase() !== data.email.toLowerCase())]);
+      }
 
       setIsModalOpen(false);
       resetForm();

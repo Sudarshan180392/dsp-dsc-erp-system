@@ -35,8 +35,10 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   await performLogout(request);
-  const url = new URL('/login', request.url);
-  const response = NextResponse.redirect(url);
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const loginUrl = forwardedHost ? `${forwardedProto}://${forwardedHost}/login` : new URL('/login', request.url);
+  const response = NextResponse.redirect(loginUrl);
   response.cookies.delete('faculty_session');
   response.cookies.delete('staff_session');
   return response;

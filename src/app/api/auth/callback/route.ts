@@ -5,7 +5,11 @@ import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const origin = requestUrl.origin;
+  
+  // Robust origin detection for Vercel / reverse proxies
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin;
 
   if (code) {
     const supabase = await createClient();

@@ -167,14 +167,19 @@ export async function POST(request: Request) {
 
         if (profileError) throw profileError;
         if (profile) {
-          return NextResponse.json({ ...profile, raw_password: password || null });
+          const fullProfile = { ...profile, raw_password: password || null };
+          // Keep in mock cache as well
+          const existingIdx = MOCK_PROFILES.findIndex(p => p.email.toLowerCase() === email.toLowerCase());
+          if (existingIdx >= 0) MOCK_PROFILES.splice(existingIdx, 1);
+          MOCK_PROFILES.unshift(fullProfile);
+          return NextResponse.json(fullProfile);
         }
       } else if (authError) {
         throw authError;
       }
     } catch (err: any) {
       console.error('Error creating user in Supabase:', err);
-      // If error is other than network, return error
+      // If error is other than network failure, return error to frontend
       if (err.message && !err.message.includes('fetch failed')) {
         return NextResponse.json({ error: err.message }, { status: 400 });
       }
@@ -191,6 +196,9 @@ export async function POST(request: Request) {
       is_active: true,
       created_at: new Date().toISOString(),
     };
+    const existingIdx = MOCK_PROFILES.findIndex(p => p.email.toLowerCase() === email.toLowerCase());
+    if (existingIdx >= 0) MOCK_PROFILES.splice(existingIdx, 1);
+    MOCK_PROFILES.unshift(newProfile);
     return NextResponse.json(newProfile);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
