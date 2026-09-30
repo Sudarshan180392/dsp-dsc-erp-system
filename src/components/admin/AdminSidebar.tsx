@@ -45,11 +45,11 @@ export default function AdminSidebar({ role, fullName, permissions }: AdminSideb
   const visibleLinks = allNavLinks.filter((link) => {
     if (!link.requiredPerm) return true;
     if (isSuperadmin) return true;
-    // For Admins: check permissions object (defaults: user_management is false, others true)
+    // For Admins: check permissions object (defaults allow all unless explicitly false)
     if (!permissions) {
-      return link.requiredPerm !== "user_management";
+      return true;
     }
-    return permissions[link.requiredPerm as keyof AdminPermissions] === true;
+    return permissions[link.requiredPerm as keyof AdminPermissions] !== false;
   });
 
   const handleLogout = async () => {

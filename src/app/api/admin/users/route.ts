@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 const MOCK_PROFILES = [
-  { id: 'u1', email: 'superadmin@dspdsc.com', full_name: 'Superadmin (Director)', role: 'SUPERADMIN', branch: null, is_active: true, created_at: new Date().toISOString() },
-  { id: 'u2', email: 'head.jal@dspdsc.com', full_name: 'Harpreet Singh (Branch Head)', role: 'BRANCH_HEAD', branch: 'Jalandhar', is_active: true, created_at: new Date().toISOString() },
-  { id: 'u3', email: 'sales.jal@dspdsc.com', full_name: 'Rohit Sharma (Senior Counselor)', role: 'SALES_REP', branch: 'Jalandhar', is_active: true, created_at: new Date().toISOString() },
-  { id: 'u4', email: 'head.ldh@dspdsc.com', full_name: 'Gurpreet Kaur (Branch Head)', role: 'BRANCH_HEAD', branch: 'Ludhiana', is_active: true, created_at: new Date().toISOString() },
-  { id: 'u5', email: 'sales.ldh@dspdsc.com', full_name: 'Priya Verma (Sales Counselor)', role: 'SALES_REP', branch: 'Ludhiana', is_active: true, created_at: new Date().toISOString() },
-  { id: 'u6', email: 'head.jag@dspdsc.com', full_name: 'Amandeep Singh (Branch Head)', role: 'BRANCH_HEAD', branch: 'Jagraon', is_active: true, created_at: new Date().toISOString() },
-  { id: 'u7', email: 'sales.jag@dspdsc.com', full_name: 'Simranjit Kaur (Counselor)', role: 'SALES_REP', branch: 'Jagraon', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u1', email: 'superadmin@dspdsc.com', full_name: 'Superadmin (Director)', role: 'SUPERADMIN', branch: null, raw_password: 'superadmin@dspdsc', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u0', email: 'admin.vikas@dspdsc.com', full_name: 'Vikas Sharma (Academic Admin)', role: 'ADMIN', branch: null, raw_password: 'vikas@admin123', permissions: { user_management: true, faculty_settings: true, courses: true, sales_pipeline: true, academics: true }, is_active: true, created_at: new Date().toISOString() },
+  { id: 'u2', email: 'head.jal@dspdsc.com', full_name: 'Harpreet Singh (Branch Head)', role: 'BRANCH_HEAD', branch: 'Jalandhar', raw_password: 'head.jal@123', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u3', email: 'sales.jal@dspdsc.com', full_name: 'Rohit Sharma (Senior Counselor)', role: 'SALES_REP', branch: 'Jalandhar', raw_password: 'rohit@dspdsc', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u4', email: 'head.ldh@dspdsc.com', full_name: 'Gurpreet Kaur (Branch Head)', role: 'BRANCH_HEAD', branch: 'Ludhiana', raw_password: 'head.ldh@123', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u5', email: 'sales.ldh@dspdsc.com', full_name: 'Priya Verma (Sales Counselor)', role: 'SALES_REP', branch: 'Ludhiana', raw_password: 'priya@dspdsc', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u6', email: 'head.jag@dspdsc.com', full_name: 'Amandeep Singh (Branch Head)', role: 'BRANCH_HEAD', branch: 'Jagraon', raw_password: 'head.jag@123', is_active: true, created_at: new Date().toISOString() },
+  { id: 'u7', email: 'sales.jag@dspdsc.com', full_name: 'Simranjit Kaur (Counselor)', role: 'SALES_REP', branch: 'Jagraon', raw_password: 'simran@dspdsc', is_active: true, created_at: new Date().toISOString() },
 ];
 
 export async function GET() {
@@ -33,6 +34,11 @@ export async function GET() {
       }
     }
 
+    // Only SUPERADMIN and ADMIN can access users API
+    if (callerRole !== 'SUPERADMIN' && callerRole !== 'ADMIN') {
+      return NextResponse.json({ error: 'Access denied. Administrator privileges required.' }, { status: 403 });
+    }
+
     // If caller is an ADMIN, check permission
     if (callerRole === 'ADMIN') {
       if (callerPermissions && callerPermissions.user_management === false) {
@@ -42,21 +48,21 @@ export async function GET() {
 
     let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
-    // If caller is ADMIN, they cannot view or manage other Admins or Superadmin
-    if (callerRole === 'ADMIN') {
-      query = query.in('role', ['BRANCH_HEAD', 'SALES_REP']);
-    }
-
     const { data: users, error } = await query;
 
-    if (error || !users || users.length === 0) {
-      if (callerRole === 'ADMIN') {
-        return NextResponse.json(MOCK_PROFILES.filter(u => u.role !== 'SUPERADMIN'));
-      }
-      return NextResponse.json(MOCK_PROFILES);
+    let resultUsers: any[] = (users && users.length > 0 && !error) ? users : MOCK_PROFILES;
+
+    // Security filter: If caller is ADMIN, they cannot view passwords of Admins or Superadmin
+    if (callerRole === 'ADMIN') {
+      resultUsers = resultUsers.map((u: any) => {
+        if (u.role === 'ADMIN' || u.role === 'SUPERADMIN') {
+          return { ...u, raw_password: null };
+        }
+        return u;
+      });
     }
-    
-    return NextResponse.json(users);
+
+    return NextResponse.json(resultUsers);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -81,6 +87,9 @@ export async function POST(request: Request) {
 
       if (callerProfile) {
         callerRole = callerProfile.role;
+        if (callerRole !== 'SUPERADMIN' && callerRole !== 'ADMIN') {
+          return NextResponse.json({ error: 'Access denied.' }, { status: 403 });
+        }
         if (callerRole === 'ADMIN') {
           if (callerProfile.permissions?.user_management === false) {
             return NextResponse.json({ error: 'You do not have permission to manage users.' }, { status: 403 });
@@ -110,30 +119,46 @@ export async function POST(request: Request) {
       });
 
       if (!authError && authData.user) {
-        const { data: profile, error: profileError } = await supabase
+        const profilePayload: any = {
+          id: authData.user.id,
+          email,
+          full_name,
+          role,
+          branch: (role === 'SUPERADMIN' || role === 'ADMIN') ? null : branch,
+          permissions: adminPermissions,
+          raw_password: password || null,
+          is_active: true
+        };
+
+        let { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              email,
-              full_name,
-              role,
-              branch: (role === 'SUPERADMIN' || role === 'ADMIN') ? null : branch,
-              permissions: adminPermissions,
-              is_active: true
-            }
-          ])
+          .insert([profilePayload])
           .select()
           .single();
 
+        if (profileError) {
+          // If raw_password column doesn't exist yet, retry without it
+          if (profileError.message?.includes('raw_password')) {
+            delete profilePayload.raw_password;
+            const retry = await supabase.from('profiles').insert([profilePayload]).select().single();
+            profile = retry.data;
+            profileError = retry.error;
+          }
+        }
+
         if (profileError) throw profileError;
-        if (profile) return NextResponse.json(profile);
+        if (profile) {
+          return NextResponse.json({ ...profile, raw_password: password || null });
+        }
       } else if (authError) {
         throw authError;
       }
     } catch (err: any) {
       console.error('Error creating user in Supabase:', err);
-      return NextResponse.json({ error: err.message }, { status: 400 });
+      // If error is other than network, return error
+      if (err.message && !err.message.includes('fetch failed')) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
     }
 
     const newProfile = {
@@ -143,6 +168,7 @@ export async function POST(request: Request) {
       role,
       branch: (role === 'SUPERADMIN' || role === 'ADMIN') ? null : branch,
       permissions: adminPermissions,
+      raw_password: password || null,
       is_active: true,
       created_at: new Date().toISOString(),
     };

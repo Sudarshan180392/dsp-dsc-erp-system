@@ -22,6 +22,11 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
+    // Only Admin and Superadmin can view passwords; strip it for regular users
+    if (profile.role !== 'SUPERADMIN' && profile.role !== 'ADMIN') {
+      delete profile.raw_password;
+    }
+
     return NextResponse.json({ user: profile });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -12,8 +12,9 @@ async function performLogout(request: Request) {
 
   const cookieStore = await cookies();
   
-  // Delete faculty session
+  // Delete faculty and staff sessions
   cookieStore.delete('faculty_session');
+  cookieStore.delete('staff_session');
 
   // Delete all Supabase cookies (sb-*)
   const allCookies = cookieStore.getAll();
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   await performLogout(request);
   const response = NextResponse.json({ success: true });
   response.cookies.delete('faculty_session');
+  response.cookies.delete('staff_session');
   return response;
 }
 
@@ -36,5 +38,6 @@ export async function GET(request: Request) {
   const url = new URL('/login', request.url);
   const response = NextResponse.redirect(url);
   response.cookies.delete('faculty_session');
+  response.cookies.delete('staff_session');
   return response;
 }

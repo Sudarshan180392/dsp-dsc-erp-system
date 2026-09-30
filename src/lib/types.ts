@@ -19,6 +19,7 @@ export interface Profile {
   role: UserRole;
   branch: Branch | null;
   permissions?: AdminPermissions | null;
+  raw_password?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

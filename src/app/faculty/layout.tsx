@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import FacultyHeader from '@/components/faculty/FacultyHeader';
+import Footer from '@/components/Footer';
 
 export default async function FacultyLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
@@ -17,11 +18,12 @@ export default async function FacultyLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
       <FacultyHeader facultyName={facultyName} subject={subject} />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }

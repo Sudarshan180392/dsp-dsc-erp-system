@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     // Frontend Preview Mode fallback:
-    if (passcode === 'faculty123' || passcode === 'admin123') {
+    if (passcode === 'faculty123' || passcode === 'admin123' || passcode === 'sudarshansir@') {
       return NextResponse.json({ success: true, faculty: FALLBACK_FACULTY });
     }
 

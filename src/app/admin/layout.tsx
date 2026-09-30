@@ -1,6 +1,9 @@
 import { ReactNode } from "react";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import Footer from "@/components/Footer";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   let role = "SUPERADMIN";
@@ -32,10 +35,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   return (
     <div className="flex h-screen bg-gray-50 flex-col md:flex-row overflow-hidden">
       <AdminSidebar role={role} fullName={fullName} permissions={permissions} />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto flex flex-col justify-between">
         <main className="p-4 md:p-8 max-w-7xl mx-auto w-full">
           {children}
         </main>
+        <Footer />
       </div>
     </div>
   );

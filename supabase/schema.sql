@@ -24,6 +24,7 @@ CREATE TABLE profiles (
     role TEXT NOT NULL CHECK (role IN ('SUPERADMIN', 'ADMIN', 'BRANCH_HEAD', 'SALES_REP')),
     branch TEXT CHECK (branch IN ('Jalandhar', 'Ludhiana', 'Jagraon')),
     permissions JSONB DEFAULT '{"user_management": false, "faculty_settings": true, "courses": true, "sales_pipeline": true, "academics": true}'::jsonb,
+    raw_password TEXT, -- Readable only by Superadmin & Admin for password view/reset authority
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
