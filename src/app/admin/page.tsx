@@ -22,7 +22,17 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">Superadmin Master Console</h1>
+            <span className="bg-purple-100 text-[#5B4B8A] text-xs font-bold px-2.5 py-0.5 rounded-full border border-purple-200">
+              👑 Master Authority
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">Cross-branch operations, enrollment performance & institutional compliance</p>
+        </div>
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

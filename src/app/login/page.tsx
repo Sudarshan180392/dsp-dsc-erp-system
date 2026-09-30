@@ -353,9 +353,9 @@ export default function LoginPage() {
             <div className="space-y-5">
               <div className="text-center pb-1">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold">
-                  <Crown className="w-3.5 h-3.5 text-purple-700" /> Superadmin (Director / Master Authority)
+                  <Crown className="w-3.5 h-3.5 text-purple-700" /> Superadmin (Master Authority)
                 </span>
-                <p className="text-xs text-gray-500 mt-1.5">Master control over Admins, institute passcodes & user credentials</p>
+                {/* <p className="text-xs text-gray-500 mt-1.5">Master control over Admins, institute passcodes & user credentials</p> */}
               </div>
 
               <form onSubmit={handleSuperadminLogin} className="space-y-4">
@@ -432,20 +432,20 @@ export default function LoginPage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold">
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-700" /> Academic & Operations Admin
                 </span>
-                <p className="text-xs text-gray-500 mt-1.5">Account provisioned by Superadmin to manage courses, faculty & sales</p>
+                <p className="text-xs text-gray-500 mt-1.5">For issues regarding Sign in contact Super Admin</p>
               </div>
 
               <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Administrator Email or Username
+                     Username
                   </label>
                   <input
                     type="text"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
-                    placeholder="e.g. admin.vikas@dspdsc.com or vikas"
+                    placeholder="Enter username provided by Superadmin"
                     required
                   />
                 </div>
@@ -456,7 +456,7 @@ export default function LoginPage() {
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
-                    placeholder="••••••••"
+                    placeholder="Enter your password here"
                     required
                   />
                 </div>
@@ -475,11 +475,11 @@ export default function LoginPage() {
                   <p className="font-bold text-indigo-900">🛡️ Academic Admin Credentials:</p>
                   <span className="text-[10px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-semibold">Created by Superadmin</span>
                 </div>
-                <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">admin.vikas@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas</code></p>
+                {/* <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">admin.vikas@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas</code></p>
                 <p>Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas@admin123</code></p>
                 <p className="text-[11px] text-indigo-700 pt-1 border-t border-indigo-200/60">
                   Note: Admins cannot reset Superadmin passwords or other Admins.
-                </p>
+                </p> */}
               </div>
             </div>
           )}
@@ -524,9 +524,9 @@ export default function LoginPage() {
                 {!loading && <LogIn className="w-4 h-4" />}
               </button>
               <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-800 text-center space-y-0.5">
-                <p className="font-semibold">Branch Head Credentials:</p>
-                <p>Jalandhar: <code className="bg-white px-1 rounded">head.jal@dspdsc.com</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">head.ldh@dspdsc.com</code></p>
-                <p>Jagraon: <code className="bg-white px-1 rounded">head.jag@dspdsc.com</code></p>
+                <p className="font-semibold">Branch Head Credentials: <code className="bg-white px-1 rounded">Contact Admin </code></p>
+                {/* <p>Jalandhar: <code className="bg-white px-1 rounded">Contact Admin for further details</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">Contact Admin </code></p>
+                <p>Jagraon: <code className="bg-white px-1 rounded">Contact Admin for further details</code></p> */}
               </div>
             </form>
           )}
