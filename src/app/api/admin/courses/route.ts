@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_COURSES = [
   {
@@ -40,37 +42,44 @@ const MOCK_COURSES = [
 ];
 
 export async function GET() {
-  try {
-    const supabase = await createServiceRoleClient();
-    const { data, error } = await supabase
-      .from('courses')
-      .select(`
-        *,
-        course_subjects (
-          id,
-          subject,
-          faculty:faculty_roster (id, name, subject)
-        )
-      `)
-      .order('created_at', { ascending: false });
+  const cookieStore = await cookies();
+  const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
 
-    if (error || !data || data.length === 0) {
-      return NextResponse.json(MOCK_COURSES);
+  // LIVE MODE: Real users query live Supabase database
+  if (!isDemo) {
+    try {
+      const supabase = await createServiceRoleClient();
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          course_subjects (
+            id,
+            subject,
+            faculty:faculty_roster (id, name, subject)
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped = data.map((c: any) => ({
+          ...c,
+          weeks: c.total_weeks || c.weeks || 26,
+          course_subjects: (c.course_subjects || []).map((cs: any) => ({
+            ...cs,
+            subject_name: cs.subject || cs.subject_name
+          }))
+        }));
+
+        return NextResponse.json(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching live courses from Supabase:', err);
     }
-    
-    const mapped = data.map((c: any) => ({
-      ...c,
-      weeks: c.total_weeks || c.weeks || 26,
-      course_subjects: (c.course_subjects || []).map((cs: any) => ({
-        ...cs,
-        subject_name: cs.subject || cs.subject_name
-      }))
-    }));
-
-    return NextResponse.json(mapped);
-  } catch {
-    return NextResponse.json(MOCK_COURSES);
   }
+
+  // DEMO MODE ONLY: Return rich mock courses for presentation
+  return NextResponse.json(MOCK_COURSES);
 }
 
 export async function POST(request: Request) {

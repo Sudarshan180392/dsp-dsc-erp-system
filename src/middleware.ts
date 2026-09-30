@@ -1,9 +1,16 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const path = url.pathname;
+
+  // If Demo / Showcase mode is active, allow seamless direct preview access for sales demonstrations
+  const isDemoMode = request.cookies.get(DEMO_COOKIE_NAME)?.value === 'true';
+  if (isDemoMode) {
+    return NextResponse.next();
+  }
 
   // If Supabase is not yet configured, allow direct preview access to test the frontend!
   const isSupabaseConfigured =

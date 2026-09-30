@@ -33,8 +33,29 @@ export async function GET(request: Request) {
       `)
       .order('created_at', { ascending: false });
 
+    const isDemo = cookieStore.get('dsp_demo_mode')?.value === 'true';
+
+    if (!isDemo && !error && courses) {
+      // Attach assigned_subject for the logged-in faculty
+      const mapped = courses.map((c: any) => {
+        let assignedSub = facultySubject || 'General';
+        if (facultyId && c.course_subjects) {
+          const found = c.course_subjects.find((cs: any) => cs.faculty_id === facultyId);
+          if (found) assignedSub = found.subject;
+        }
+        return {
+          ...c,
+          assigned_subject: assignedSub,
+          faculty_name: facultyName,
+          faculty_id: facultyId
+        };
+      });
+
+      return NextResponse.json(mapped);
+    }
+
     if (error || !courses || courses.length === 0) {
-      // Fallback sample course
+      // Fallback sample course ONLY for demo/showcase
       return NextResponse.json([
         {
           id: 'bb000000-0000-0000-0000-000000000001',
@@ -43,7 +64,7 @@ export async function GET(request: Request) {
           start_date: '2026-09-28',
           target_end_date: '2027-03-28',
           total_weeks: 26,
-          assigned_subject: facultySubject || 'General',
+          assigned_subject: facultySubject || 'Quantitative Aptitude',
           description: 'Comprehensive preparation for SSC CGL 2027.'
         }
       ]);

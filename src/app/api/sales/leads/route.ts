@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_LEADS = [
   // Jalandhar Leads
@@ -165,51 +167,52 @@ export async function GET(request: Request) {
   const status = searchParams.get('status');
   const search = searchParams.get('search');
   
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+  const cookieStore = await cookies();
+  const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
 
-    if (branch) {
-      query = query.eq('branch', branch);
-    }
-    
-    // Lead isolation: Sales reps only see their own leads
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
+  // LIVE MODE: Real users query live Supabase database
+  if (!isDemo) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (profile?.role === 'SALES_REP') {
-        query = query.eq('assigned_to', user.id);
+      let query = supabase.from('leads').select('*').order('created_at', { ascending: false });
+
+      if (branch) {
+        query = query.eq('branch', branch);
       }
+      
+      // Lead isolation: Sales reps only see their own leads
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (profile?.role === 'SALES_REP') {
+          query = query.eq('assigned_to', user.id);
+        }
+      }
+      
+      if (status && status !== 'All' && status !== 'ALL') {
+        query = query.eq('status', status);
+      }
+      
+      if (search) {
+        query = query.or(`student_name.ilike.%${search}%,phone.ilike.%${search}%`);
+      }
+      
+      const { data, error } = await query;
+      if (!error) {
+        return NextResponse.json(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching live leads from Supabase:', err);
     }
-    
-    if (status && status !== 'All' && status !== 'ALL') {
-      query = query.eq('status', status);
-    }
-    
-    if (search) {
-      query = query.or(`student_name.ilike.%${search}%,phone.ilike.%${search}%`);
-    }
-    
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      return NextResponse.json(data);
-    }
-    
-    // If no data but also no error, return empty array (not mock data) when user is authenticated
-    if (!error && user) {
-      return NextResponse.json(data || []);
-    }
-  } catch {
-    // Fallback in preview mode
   }
   
-  // Return filtered mock leads for preview (only when not authenticated)
+  // DEMO MODE ONLY: Return rich mock leads for presentation/pitch
   let results = MOCK_LEADS;
   if (branch) {
     results = results.filter((l) => l.branch.toLowerCase() === branch.toLowerCase());
@@ -229,66 +232,68 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
+  const cookieStore = await cookies();
+  const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
   
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      // Get user profile for role check and name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, full_name, branch')
-        .eq('id', user.id)
-        .maybeSingle();
+  // LIVE MODE: Save real student lead to Supabase
+  if (!isDemo) {
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      const leadData: any = {
-        ...body,
-        created_by: user.id,
-        created_by_name: profile?.full_name || user.email,
-      };
-      
-      // If sales rep creates a lead, auto-assign to themselves
-      if (profile?.role === 'SALES_REP') {
-        leadData.assigned_to = user.id;
-        leadData.assigned_to_name = profile.full_name;
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, full_name, branch')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        const leadData: any = {
+          ...body,
+          created_by: user.id,
+          created_by_name: profile?.full_name || user.email,
+        };
+        
+        if (profile?.role === 'SALES_REP') {
+          leadData.assigned_to = user.id;
+          leadData.assigned_to_name = profile.full_name;
+        }
+        
+        if (!leadData.branch && profile?.branch) {
+          leadData.branch = profile.branch;
+        }
+        
+        const { data: lead, error: leadError } = await supabase.from('leads').insert(leadData).select().single();
+        
+        if (!leadError && lead) {
+          await supabase.from('lead_activity_log').insert({
+            lead_id: lead.id,
+            performed_by: user.id,
+            performed_by_name: profile?.full_name || user.email || 'Unknown',
+            performed_by_role: profile?.role || 'UNKNOWN',
+            action_type: 'CREATED',
+            action_details: `Lead created for ${lead.student_name}`,
+          });
+          return NextResponse.json(lead);
+        }
+        
+        if (leadError) {
+          console.error('Error creating lead in database:', leadError);
+          return NextResponse.json({ error: leadError.message }, { status: 500 });
+        }
       }
-      
-      // Ensure branch is set from profile if not provided
-      if (!leadData.branch && profile?.branch) {
-        leadData.branch = profile.branch;
-      }
-      
-      const { data: lead, error: leadError } = await supabase.from('leads').insert(leadData).select().single();
-      
-      if (!leadError && lead) {
-        await supabase.from('lead_activity_log').insert({
-          lead_id: lead.id,
-          performed_by: user.id,
-          performed_by_name: profile?.full_name || user.email || 'Unknown',
-          performed_by_role: profile?.role || 'UNKNOWN',
-          action_type: 'CREATED',
-          action_details: `Lead created for ${lead.student_name}`,
-        });
-        return NextResponse.json(lead);
-      }
-      
-      if (leadError) {
-        console.error('Error creating lead:', leadError);
-        return NextResponse.json({ error: leadError.message }, { status: 500 });
-      }
+    } catch (err) {
+      console.error('Error in POST /api/sales/leads:', err);
     }
-  } catch (err) {
-    console.error('Error in POST /api/sales/leads:', err);
   }
 
-  // Create preview lead
-  const newLead = {
-    id: `lead-${Date.now()}`,
+  // DEMO MODE ONLY: Return simulated lead without touching Supabase database
+  const demoLead = {
+    id: `demo-lead-${Date.now()}`,
     ...body,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    created_by_name: 'Current Staff'
+    created_by_name: 'Showcase Counselor (Demo)'
   };
-  return NextResponse.json(newLead);
+  return NextResponse.json(demoLead);
 }

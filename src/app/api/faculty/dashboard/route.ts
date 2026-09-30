@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServiceRoleClient } from '@/lib/supabase/server';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_COURSE = {
   id: 'c1',
@@ -93,115 +95,129 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const courseId = searchParams.get('courseId');
 
-    try {
-      const supabase = await createServiceRoleClient();
+    const cookieStore = await cookies();
+    const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
 
-      // Check if courseId is a valid UUID
-      const isValidUuid = courseId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
-      
-      let currentCourse = null;
-      if (isValidUuid) {
-        const { data: foundCourse } = await supabase
-          .from('courses')
-          .select('*')
-          .eq('id', courseId)
-          .maybeSingle();
-        currentCourse = foundCourse;
-      }
+    if (!isDemo) {
+      try {
+        const supabase = await createServiceRoleClient();
 
-      if (!currentCourse) {
-        const { data: allCourses } = await supabase
-          .from('courses')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(1);
-        currentCourse = allCourses && allCourses.length > 0 ? allCourses[0] : null;
-      }
-
-      const { data: facultyRoster, error: rosterError } = await supabase
-        .from('faculty_roster')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (facultyRoster && facultyRoster.length > 0) {
-        const activeCourse = currentCourse || MOCK_COURSE;
-        let logs: any[] = [];
+        // Check if courseId is a valid UUID
+        const isValidUuid = courseId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(courseId);
         
-        if (currentCourse?.id) {
-          const { data: courseLogs } = await supabase
-            .from('weekly_logs')
+        let currentCourse = null;
+        if (isValidUuid) {
+          const { data: foundCourse } = await supabase
+            .from('courses')
             .select('*')
-            .eq('course_id', currentCourse.id)
-            .order('week_no', { ascending: true });
-          logs = courseLogs || [];
+            .eq('id', courseId)
+            .maybeSingle();
+          currentCourse = foundCourse;
         }
 
-        const start = new Date(activeCourse.start_date).getTime();
-        const end = new Date(activeCourse.target_end_date).getTime();
-        const now = new Date().getTime();
+        if (!currentCourse) {
+          const { data: allCourses } = await supabase
+            .from('courses')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          currentCourse = allCourses && allCourses.length > 0 ? allCourses[0] : null;
+        }
 
-        const totalDays = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
-        const elapsedDays = Math.max(0, (now - start) / (1000 * 60 * 60 * 24));
+        const { data: facultyRoster, error: rosterError } = await supabase
+          .from('faculty_roster')
+          .select('*')
+          .eq('is_active', true)
+          .order('name');
 
-        const currentWeekNo = Math.min(
-          activeCourse.total_weeks || 26,
-          Math.max(1, Math.floor(elapsedDays / 7) + 1)
-        );
-        const expectedPct = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+        if (facultyRoster && facultyRoster.length > 0 && currentCourse) {
+          const activeCourse = currentCourse;
+          let logs: any[] = [];
+          
+          if (currentCourse?.id) {
+            const { data: courseLogs } = await supabase
+              .from('weekly_logs')
+              .select('*')
+              .eq('course_id', currentCourse.id)
+              .order('week_no', { ascending: true });
+            logs = courseLogs || [];
+          }
 
-        const matrix: Record<string, Record<number, number>> = {};
-        const facultyList = facultyRoster.map((fac: any) => {
-          matrix[fac.id] = {};
-          const facLogs = logs.filter(
-            (l: any) => l.faculty_id === fac.id || l.faculty_name === fac.name
+          const start = new Date(activeCourse.start_date).getTime();
+          const end = new Date(activeCourse.target_end_date).getTime();
+          const now = new Date().getTime();
+
+          const totalDays = Math.max(1, (end - start) / (1000 * 60 * 60 * 24));
+          const elapsedDays = Math.max(0, (now - start) / (1000 * 60 * 60 * 24));
+
+          const currentWeekNo = Math.min(
+            activeCourse.total_weeks || 26,
+            Math.max(1, Math.floor(elapsedDays / 7) + 1)
           );
+          const expectedPct = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
 
-          let latestCompletion = 0;
-          let lastWeekUpdated = 0;
-          let classesTakenTotal = 0;
-          let lastUpdatedBy = fac.name;
-          let lastUpdatedAt = null;
+          const matrix: Record<string, Record<number, number>> = {};
+          const facultyList = facultyRoster.map((fac: any) => {
+            matrix[fac.id] = {};
+            const facLogs = logs.filter(
+              (l: any) => l.faculty_id === fac.id || l.faculty_name === fac.name
+            );
 
-          facLogs.forEach((l: any) => {
-            matrix[fac.id][l.week_no] = Number(l.completed_pct || 0);
-            classesTakenTotal += Number(l.classes_taken || 0);
+            let latestCompletion = 0;
+            let lastWeekUpdated = 0;
+            let classesTakenTotal = 0;
+            let lastUpdatedBy = fac.name;
+            let lastUpdatedAt = null;
 
-            if (l.week_no > lastWeekUpdated) {
-              lastWeekUpdated = l.week_no;
-              latestCompletion = Number(l.completed_pct || 0);
-              lastUpdatedBy = l.updated_by_name || fac.name;
-              lastUpdatedAt = l.updated_at;
-            }
+            facLogs.forEach((l: any) => {
+              matrix[fac.id][l.week_no] = Number(l.completed_pct || 0);
+              classesTakenTotal += Number(l.classes_taken || 0);
+
+              if (l.week_no > lastWeekUpdated) {
+                lastWeekUpdated = l.week_no;
+                latestCompletion = Number(l.completed_pct || 0);
+                lastUpdatedBy = l.updated_by_name || fac.name;
+                lastUpdatedAt = l.updated_at;
+              }
+            });
+
+            return {
+              id: fac.id,
+              name: fac.name,
+              subject: fac.subject,
+              latestCompletion,
+              expectedPct,
+              lastWeekUpdated,
+              classesTakenTotal,
+              lastUpdatedBy,
+              lastUpdatedAt,
+            };
           });
 
-          return {
-            id: fac.id,
-            name: fac.name,
-            subject: fac.subject,
-            latestCompletion,
+          return NextResponse.json({
+            currentCourse: activeCourse,
+            currentWeekNo,
             expectedPct,
-            lastWeekUpdated,
-            classesTakenTotal,
-            lastUpdatedBy,
-            lastUpdatedAt,
-          };
-        });
-
-        return NextResponse.json({
-          currentCourse: activeCourse,
-          currentWeekNo,
-          expectedPct,
-          facultyList,
-          matrix,
-          logs,
-        });
+            facultyList,
+            matrix,
+            logs,
+          });
+        } else if (!rosterError) {
+          return NextResponse.json({
+            currentCourse: currentCourse || null,
+            currentWeekNo: 1,
+            expectedPct: 0,
+            facultyList: facultyRoster || [],
+            matrix: {},
+            logs: [],
+          });
+        }
+      } catch (dbErr) {
+        console.error('Error fetching live dashboard from Supabase:', dbErr);
       }
-    } catch (dbErr) {
-      console.error('Error fetching live dashboard from Supabase:', dbErr);
     }
 
-    // Return rich mock data for frontend testing
+    // DEMO MODE ONLY: Return rich mock data for presentation
     return NextResponse.json({
       currentCourse: MOCK_COURSE,
       currentWeekNo: 9,

@@ -34,6 +34,31 @@ export default function LoginPage() {
 
   const router = useRouter();
 
+  const clearDemoMode = () => {
+    document.cookie = 'dsp_demo_mode=; path=/; max-age=0;';
+  };
+
+  const handleLaunchDemo = async (target: 'admin' | 'faculty' | 'sales', branch?: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/demo-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target, branch }),
+      });
+      const data = await res.json();
+      if (data.redirect) {
+        window.location.href = data.redirect;
+        return;
+      }
+    } catch (e) {
+      console.error('Demo launch error', e);
+    }
+    if (target === 'faculty') window.location.href = '/faculty';
+    else if (target === 'sales') window.location.href = `/sales/${branch || 'Jalandhar'}`;
+    else window.location.href = '/admin';
+  };
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -55,6 +80,7 @@ export default function LoginPage() {
         throw new Error('Unauthorized: This account does not have Administrator privileges.');
       }
 
+      clearDemoMode();
       window.location.href = '/admin';
     } catch (err: any) {
       setError(err.message);
@@ -80,6 +106,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
+      clearDemoMode();
       if (data.role === 'SUPERADMIN' || data.role === 'ADMIN') {
         window.location.href = '/admin';
       } else {
@@ -123,6 +150,7 @@ export default function LoginPage() {
         throw new Error(`You are not assigned to the ${repBranch} branch. Your branch is ${data.branch}.`);
       }
 
+      clearDemoMode();
       window.location.href = `/sales/${data.branch || repBranch}`;
     } catch (err: any) {
       setError(err.message);
@@ -184,6 +212,7 @@ export default function LoginPage() {
         throw new Error('Failed to create session');
       }
 
+      clearDemoMode();
       router.push('/faculty');
     } catch (err: any) {
       setError(err.message);
@@ -489,42 +518,55 @@ export default function LoginPage() {
 
         {/* Quick Frontend Preview Navigation */}
         <div className="bg-gray-50 p-6 border-t border-gray-100 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">
-            Frontend UI Preview (Direct Access)
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+              Frontend UI Preview (Sales & Pitch Demo)
+            </p>
+            <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">
+              Demo Data Isolated
+            </span>
+          </div>
+          <p className="text-[11px] text-gray-500 mb-3 text-left">
+            Pitch and test pre-populated sample academy data without affecting the live ERP database:
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
-              onClick={() => router.push('/admin')}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between"
+              onClick={() => handleLaunchDemo('admin')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
             >
               <span>👑 Superadmin</span>
               <span className="text-[10px] text-gray-400">/admin</span>
             </button>
             <button
-              onClick={() => router.push('/faculty')}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between"
+              onClick={() => handleLaunchDemo('faculty')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
             >
               <span>👨‍🏫 Faculty Portal</span>
               <span className="text-[10px] text-gray-400">/faculty</span>
             </button>
             <button
-              onClick={() => router.push('/sales/Jalandhar')}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between"
+              onClick={() => handleLaunchDemo('sales', 'Jalandhar')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
             >
               <span>📍 Jalandhar CRM</span>
               <span className="text-[10px] text-gray-400">Sales</span>
             </button>
             <button
-              onClick={() => router.push('/sales/Ludhiana')}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between"
+              onClick={() => handleLaunchDemo('sales', 'Ludhiana')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
             >
               <span>📍 Ludhiana CRM</span>
               <span className="text-[10px] text-gray-400">Sales</span>
             </button>
           </div>
           <button
-            onClick={() => router.push('/sales/Jagraon')}
-            className="w-full mt-2 p-2 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-center text-xs"
+            onClick={() => handleLaunchDemo('sales', 'Jagraon')}
+            disabled={loading}
+            className="w-full mt-2 p-2 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-center text-xs disabled:opacity-50 shadow-xs"
           >
             📍 Jagraon CRM (/sales/Jagraon)
           </button>

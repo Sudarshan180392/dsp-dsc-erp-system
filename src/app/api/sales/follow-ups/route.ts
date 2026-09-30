@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_FOLLOW_UPS: Record<string, any[]> = {
   Jalandhar: [
@@ -73,30 +74,35 @@ export async function GET(request: Request) {
       }
     }
 
-    let query = supabase
-      .from('follow_ups')
-      .select('*, leads!inner(*)')
-      .eq('leads.branch', branch)
-      .neq('status', 'COMPLETED');
+    const cookieStore = await cookies();
+    const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
 
-    if (role === 'SALES_REP' && userId && !userId.startsWith('preview-')) {
-      query = query.eq('leads.assigned_to', userId);
-    }
-      
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const result: { overdue: any[]; today: any[]; upcoming: any[] } = { overdue: [], today: [], upcoming: [] };
-      data.forEach((item: any) => {
-        if (item.scheduled_date < todayStr) result.overdue.push(item);
-        else if (item.scheduled_date === todayStr) result.today.push(item);
-        else result.upcoming.push(item);
-      });
-      return NextResponse.json(result);
+    if (!isDemo) {
+      let query = supabase
+        .from('follow_ups')
+        .select('*, leads!inner(*)')
+        .eq('leads.branch', branch)
+        .neq('status', 'COMPLETED');
+
+      if (role === 'SALES_REP' && userId && !userId.startsWith('preview-')) {
+        query = query.eq('leads.assigned_to', userId);
+      }
+        
+      const { data, error } = await query;
+      if (!error) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const result: { overdue: any[]; today: any[]; upcoming: any[] } = { overdue: [], today: [], upcoming: [] };
+        (data || []).forEach((item: any) => {
+          if (item.scheduled_date < todayStr) result.overdue.push(item);
+          else if (item.scheduled_date === todayStr) result.today.push(item);
+          else result.upcoming.push(item);
+        });
+        return NextResponse.json(result);
+      }
     }
   } catch {}
 
-  // Fallback to mock follow-ups
+  // Fallback to mock follow-ups ONLY in Demo Mode
   const todayStr = new Date().toISOString().split('T')[0];
   const result: { overdue: any[]; today: any[]; upcoming: any[] } = { overdue: [], today: [], upcoming: [] };
   const mockItems = MOCK_FOLLOW_UPS[branch] || [];

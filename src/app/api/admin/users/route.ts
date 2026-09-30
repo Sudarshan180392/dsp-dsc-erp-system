@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_PROFILES = [
   { id: 'u1', email: 'superadmin@dspdsc.com', full_name: 'Superadmin (Director)', role: 'SUPERADMIN', branch: null, raw_password: 'superadmin@dspdsc', is_active: true, created_at: new Date().toISOString() },
@@ -46,13 +48,30 @@ export async function GET() {
       }
     }
 
-    let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    const cookieStore = await cookies();
+    const isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
 
-    const { data: users, error } = await query;
+    // LIVE MODE: Real users query live Supabase database
+    if (!isDemo) {
+      const { data: users, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
-    let resultUsers: any[] = (users && users.length > 0 && !error) ? users : MOCK_PROFILES;
+      if (!error && users) {
+        let resultUsers: any[] = users;
+        // Security filter: If caller is ADMIN, they cannot view passwords of Admins or Superadmin
+        if (callerRole === 'ADMIN') {
+          resultUsers = resultUsers.map((u: any) => {
+            if (u.role === 'ADMIN' || u.role === 'SUPERADMIN') {
+              return { ...u, raw_password: null };
+            }
+            return u;
+          });
+        }
+        return NextResponse.json(resultUsers);
+      }
+    }
 
-    // Security filter: If caller is ADMIN, they cannot view passwords of Admins or Superadmin
+    // DEMO MODE ONLY: Return mock profiles for presentation/pitch
+    let resultUsers: any[] = MOCK_PROFILES;
     if (callerRole === 'ADMIN') {
       resultUsers = resultUsers.map((u: any) => {
         if (u.role === 'ADMIN' || u.role === 'SUPERADMIN') {

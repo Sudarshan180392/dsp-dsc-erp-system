@@ -2,6 +2,7 @@ import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 import { Users, AlertCircle, TrendingUp, UserCheck, ShieldCheck, User, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { DEMO_COOKIE_NAME } from '@/lib/demo';
 
 const MOCK_LEADS_DASHBOARD = [
   // Jalandhar
@@ -61,20 +62,27 @@ export default async function SalesDashboard({ params }: { params: Promise<{ bra
   const isSalesRep = role === 'SALES_REP';
 
   let leads: any[] = [];
+  let isDemo = false;
+
   try {
-    const supabase = await createClient();
-    let query = supabase.from('leads').select('*').eq('branch', decodedBranch);
-    if (isSalesRep && userId && !userId.startsWith('preview-')) {
-      query = query.eq('assigned_to', userId);
-    }
-    const { data, error } = await query;
-    if (!error && data && data.length > 0) {
-      leads = data;
+    const cookieStore = await cookies();
+    isDemo = cookieStore.get(DEMO_COOKIE_NAME)?.value === 'true';
+
+    if (!isDemo) {
+      const supabase = await createClient();
+      let query = supabase.from('leads').select('*').eq('branch', decodedBranch);
+      if (isSalesRep && userId && !userId.startsWith('preview-')) {
+        query = query.eq('assigned_to', userId);
+      }
+      const { data, error } = await query;
+      if (!error && data) {
+        leads = data;
+      }
     }
   } catch {}
 
-  // Fallback to mock leads
-  if (leads.length === 0) {
+  // Fallback to mock leads ONLY in Demo Mode (pitch & showcase)
+  if (isDemo) {
     let mock = MOCK_LEADS_DASHBOARD.filter(
       (l) => l.branch.toLowerCase() === decodedBranch.toLowerCase()
     );
