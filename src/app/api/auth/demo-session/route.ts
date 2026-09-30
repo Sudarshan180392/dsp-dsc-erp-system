@@ -48,8 +48,23 @@ export async function POST(request: Request) {
         httpOnly: false,
         sameSite: 'lax',
       });
+    } else if (target === 'admin_staff') {
+      redirectUrl = '/admin';
+      // Set preview academic admin session (appointed by Superadmin)
+      response.cookies.set('staff_session', JSON.stringify({
+        userId: 'preview-admin',
+        role: 'ADMIN',
+        branch: null,
+        fullName: 'Vikas Sharma (Academic Admin)',
+        email: 'admin.vikas@dspdsc.com',
+      }), {
+        path: '/',
+        maxAge: 60 * 60 * 6,
+        httpOnly: false,
+        sameSite: 'lax',
+      });
     } else {
-      // Superadmin
+      // Superadmin (Director / Owner)
       redirectUrl = '/admin';
       response.cookies.set('staff_session', JSON.stringify({
         userId: 'preview-superadmin',

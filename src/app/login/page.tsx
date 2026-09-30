@@ -3,17 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { UserCircle, KeyRound, Shield, LogIn, Building2, GraduationCap, Users } from 'lucide-react';
+import { UserCircle, KeyRound, Shield, LogIn, Building2, GraduationCap, Users, Crown, ShieldCheck } from 'lucide-react';
 import Footer from '@/components/Footer';
 
-type Tab = 'staff' | 'faculty' | 'admin' | 'salesrep';
+type Tab = 'superadmin' | 'admin' | 'staff' | 'salesrep' | 'faculty';
 
 export default function LoginPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('staff');
+  const [activeTab, setActiveTab] = useState<Tab>('superadmin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Staff state
+  // Superadmin state (Master Director)
+  const [superadminEmail, setSuperadminEmail] = useState('');
+  const [superadminPassword, setSuperadminPassword] = useState('');
+
+  // Admin state (Academic / Operations Admin)
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
+  // Staff state (Branch Head)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -21,10 +29,6 @@ export default function LoginPage() {
   const [repBranch, setRepBranch] = useState<string>('');
   const [repEmail, setRepEmail] = useState('');
   const [repPassword, setRepPassword] = useState('');
-
-  // Admin state
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
 
   // Faculty state
   const [passcode, setPasscode] = useState('');
@@ -38,7 +42,7 @@ export default function LoginPage() {
     document.cookie = 'dsp_demo_mode=; path=/; max-age=0;';
   };
 
-  const handleLaunchDemo = async (target: 'admin' | 'faculty' | 'sales', branch?: string) => {
+  const handleLaunchDemo = async (target: 'superadmin' | 'admin_staff' | 'admin' | 'faculty' | 'sales', branch?: string) => {
     setLoading(true);
     try {
       const res = await fetch('/api/auth/demo-session', {
@@ -59,6 +63,36 @@ export default function LoginPage() {
     else window.location.href = '/admin';
   };
 
+  const handleSuperadminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/auth/staff-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: superadminEmail, password: superadminPassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Superadmin login failed');
+      }
+
+      if (data.role !== 'SUPERADMIN') {
+        throw new Error('Unauthorized: This account does not have Superadmin privileges. Admins should use the Admin tab.');
+      }
+
+      clearDemoMode();
+      window.location.href = '/admin';
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -76,8 +110,8 @@ export default function LoginPage() {
         throw new Error(data.error || 'Admin login failed');
       }
 
-      if (data.role !== 'SUPERADMIN' && data.role !== 'ADMIN') {
-        throw new Error('Unauthorized: This account does not have Administrator privileges.');
+      if (data.role !== 'ADMIN' && data.role !== 'SUPERADMIN') {
+        throw new Error('Unauthorized: This account does not have Administrator privileges. Staff and Sales Reps should use their respective tabs.');
       }
 
       clearDemoMode();
@@ -254,42 +288,56 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="flex border-b border-gray-200">
+        <div className="grid grid-cols-5 border-b border-gray-200 bg-gray-50/70 p-1 gap-1 text-center">
           <button
-            onClick={() => { setActiveTab('staff'); setError(null); }}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'staff' ? 'text-[#5B4B8A] border-b-2 border-[#5B4B8A] bg-gray-50/50' : 'text-gray-500 hover:text-gray-700'
+            type="button"
+            onClick={() => { setActiveTab('superadmin'); setError(null); }}
+            className={`py-2.5 px-1 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1 ${
+              activeTab === 'superadmin' ? 'bg-white text-purple-900 shadow-xs border border-purple-200 font-bold' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
-            <UserCircle className="w-4 h-4" />
-            Staff
+            <Crown className="w-4 h-4 text-purple-600" />
+            <span className="text-[11px] truncate">Superadmin</span>
           </button>
           <button
-            onClick={() => { setActiveTab('faculty'); setError(null); }}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'faculty' ? 'text-[#5B4B8A] border-b-2 border-[#5B4B8A] bg-gray-50/50' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <GraduationCap className="w-4 h-4" />
-            Faculty
-          </button>
-          <button
+            type="button"
             onClick={() => { setActiveTab('admin'); setError(null); }}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'admin' ? 'text-[#5B4B8A] border-b-2 border-[#5B4B8A] bg-gray-50/50' : 'text-gray-500 hover:text-gray-700'
+            className={`py-2.5 px-1 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1 ${
+              activeTab === 'admin' ? 'bg-white text-[#5B4B8A] shadow-xs border border-purple-200 font-bold' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            Admin
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <span className="text-[11px] truncate">Admin</span>
           </button>
           <button
-            onClick={() => { setActiveTab('salesrep'); setError(null); }}
-            className={`flex-1 py-4 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-              activeTab === 'salesrep' ? 'text-[#5B4B8A] border-b-2 border-[#5B4B8A] bg-gray-50/50' : 'text-gray-500 hover:text-gray-700'
+            type="button"
+            onClick={() => { setActiveTab('staff'); setError(null); }}
+            className={`py-2.5 px-1 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1 ${
+              activeTab === 'staff' ? 'bg-white text-blue-800 shadow-xs border border-blue-200 font-bold' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
-            <Users className="w-4 h-4" />
-            Sales Rep
+            <Building2 className="w-4 h-4 text-blue-600" />
+            <span className="text-[11px] truncate">Branch Head</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('salesrep'); setError(null); }}
+            className={`py-2.5 px-1 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1 ${
+              activeTab === 'salesrep' ? 'bg-white text-emerald-800 shadow-xs border border-emerald-200 font-bold' : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <Users className="w-4 h-4 text-emerald-600" />
+            <span className="text-[11px] truncate">Sales Rep</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab('faculty'); setError(null); }}
+            className={`py-2.5 px-1 rounded-xl text-xs font-semibold transition-all flex flex-col items-center justify-center gap-1 ${
+              activeTab === 'faculty' ? 'bg-white text-amber-800 shadow-xs border border-amber-200 font-bold' : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <GraduationCap className="w-4 h-4 text-amber-600" />
+            <span className="text-[11px] truncate">Faculty</span>
           </button>
         </div>
 
@@ -300,120 +348,36 @@ export default function LoginPage() {
             </div>
           )}
 
-          {activeTab === 'staff' && (
-            <form onSubmit={handleStaffLogin} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
-                  placeholder="name@dspdsc.com"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-              >
-                {loading ? 'Signing in...' : 'Sign In'}
-                {!loading && <LogIn className="w-4 h-4" />}
-              </button>
-            </form>
-          )}
-
-          {activeTab === 'faculty' && (
+          {/* TAB 1: SUPERADMIN (MASTER AUTHORITY) */}
+          {activeTab === 'superadmin' && (
             <div className="space-y-5">
-              {!passcodeVerified ? (
-                <form onSubmit={handleFacultyVerify} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Faculty Passcode</label>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="password"
-                        value={passcode}
-                        onChange={(e) => setPasscode(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all text-center tracking-widest text-lg"
-                        placeholder="••••"
-                        maxLength={10}
-                        required
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Verifying...' : 'Enter'}
-                  </button>
-                </form>
-              ) : (
-                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Name</label>
-                    <select
-                      value={selectedFaculty}
-                      onChange={(e) => setSelectedFaculty(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all bg-white"
-                      required
-                    >
-                      <option value="">-- Choose Name --</option>
-                      {facultyList.map((faculty) => (
-                        <option key={faculty.id} value={faculty.id}>
-                          {faculty.name} ({faculty.subject})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    onClick={handleFacultyContinue}
-                    disabled={loading || !selectedFaculty}
-                    className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Loading...' : 'Continue to Dashboard'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+              <div className="text-center pb-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold">
+                  <Crown className="w-3.5 h-3.5 text-purple-700" /> Superadmin (Director / Master Authority)
+                </span>
+                <p className="text-xs text-gray-500 mt-1.5">Master control over Admins, institute passcodes & user credentials</p>
+              </div>
 
-          {activeTab === 'admin' && (
-            <div className="space-y-5">
-              <form onSubmit={handleAdminLogin} className="space-y-4">
+              <form onSubmit={handleSuperadminLogin} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Administrator Email / Username
+                    Superadmin Email / Login ID
                   </label>
                   <input
                     type="text"
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
+                    value={superadminEmail}
+                    onChange={(e) => setSuperadminEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
-                    placeholder="e.g. admin.vikas or superadmin@dspdsc.com"
+                    placeholder="superadmin@dspdsc.com or superadmin"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Master Password</label>
                   <input
                     type="password"
-                    value={adminPassword}
-                    onChange={(e) => setAdminPassword(e.target.value)}
+                    value={superadminPassword}
+                    onChange={(e) => setSuperadminPassword(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
                     placeholder="••••••••"
                     required
@@ -424,7 +388,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2 shadow-sm"
                 >
-                  {loading ? 'Authenticating Admin...' : 'Sign In as Administrator'}
+                  {loading ? 'Authenticating Superadmin...' : 'Sign In as Superadmin'}
                   {!loading && <LogIn className="w-4 h-4" />}
                 </button>
               </form>
@@ -453,16 +417,129 @@ export default function LoginPage() {
                 <span>Continue with Google (Optional for Superadmin)</span>
               </button>
 
-              <div className="bg-purple-50 p-2.5 rounded-lg border border-purple-100 text-[11px] text-purple-800 text-center space-y-0.5">
-                <p className="font-semibold">Administrator Access Credentials:</p>
-                <p>Superadmin: <code className="bg-white px-1 rounded">superadmin@dspdsc.com</code> (pass: <code className="bg-white px-1 rounded">superadmin@dspdsc</code>)</p>
-                <p>Academic Admin: <code className="bg-white px-1 rounded">admin.vikas@dspdsc.com</code> (pass: <code className="bg-white px-1 rounded">vikas@admin123</code>)</p>
+              <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-1 text-left">
+                <p className="font-bold text-purple-900 flex items-center gap-1.5">👑 Superadmin Default Credentials:</p>
+                <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin</code></p>
+                <p>Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin@dspdsc</code></p>
               </div>
             </div>
           )}
 
+          {/* TAB 2: ADMIN (ACADEMIC / OPERATIONS ADMIN) */}
+          {activeTab === 'admin' && (
+            <div className="space-y-5">
+              <div className="text-center pb-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-700" /> Academic & Operations Admin
+                </span>
+                <p className="text-xs text-gray-500 mt-1.5">Account provisioned by Superadmin to manage courses, faculty & sales</p>
+              </div>
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Administrator Email or Username
+                  </label>
+                  <input
+                    type="text"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
+                    placeholder="e.g. admin.vikas@dspdsc.com or vikas"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2 shadow-sm"
+                >
+                  {loading ? 'Authenticating Admin...' : 'Sign In as Administrator'}
+                  {!loading && <LogIn className="w-4 h-4" />}
+                </button>
+              </form>
+
+              <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-xs text-indigo-900 space-y-1 text-left">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-indigo-900">🛡️ Academic Admin Credentials:</p>
+                  <span className="text-[10px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-semibold">Created by Superadmin</span>
+                </div>
+                <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">admin.vikas@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas</code></p>
+                <p>Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas@admin123</code></p>
+                <p className="text-[11px] text-indigo-700 pt-1 border-t border-indigo-200/60">
+                  Note: Admins cannot reset Superadmin passwords or other Admins.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: STAFF (BRANCH HEAD) */}
+          {activeTab === 'staff' && (
+            <form onSubmit={handleStaffLogin} className="space-y-5">
+              <div className="text-center pb-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">
+                  <Building2 className="w-3.5 h-3.5 text-blue-700" /> Branch Head Portal
+                </span>
+                <p className="text-xs text-gray-500 mt-1.5">Manage branch pipeline, leads & monitor your sales rep team</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Branch Head Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
+                  placeholder="e.g. head.jal@dspdsc.com"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              >
+                {loading ? 'Signing in...' : 'Sign In as Branch Head'}
+                {!loading && <LogIn className="w-4 h-4" />}
+              </button>
+              <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-800 text-center space-y-0.5">
+                <p className="font-semibold">Branch Head Credentials:</p>
+                <p>Jalandhar: <code className="bg-white px-1 rounded">head.jal@dspdsc.com</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">head.ldh@dspdsc.com</code></p>
+                <p>Jagraon: <code className="bg-white px-1 rounded">head.jag@dspdsc.com</code></p>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 4: SALES REP */}
           {activeTab === 'salesrep' && (
             <form onSubmit={handleSalesRepLogin} className="space-y-5">
+              <div className="text-center pb-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                  <Users className="w-3.5 h-3.5 text-emerald-700" /> Sales Representative Portal
+                </span>
+                <p className="text-xs text-gray-500 mt-1.5">Select your branch to log in and work with your private leads</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Select Branch</label>
                 <select
@@ -507,12 +584,78 @@ export default function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign In as Sales Rep'}
                 {!loading && <LogIn className="w-4 h-4" />}
               </button>
-              <div className="bg-purple-50 p-2.5 rounded-lg border border-purple-100 text-[11px] text-purple-800 text-center space-y-0.5">
+              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-[11px] text-emerald-800 text-center space-y-0.5">
                 <p className="font-semibold">Quick Preview Credentials:</p>
                 <p>Jalandhar: <code className="bg-white px-1 rounded">sales.jal</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">sales.ldh</code> &bull; Jagraon: <code className="bg-white px-1 rounded">sales.jag</code></p>
-                <p className="text-purple-600">(Any password works in preview mode)</p>
+                <p className="text-emerald-700">(Any password works in preview mode)</p>
               </div>
             </form>
+          )}
+
+          {/* TAB 5: FACULTY */}
+          {activeTab === 'faculty' && (
+            <div className="space-y-5">
+              <div className="text-center pb-1">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
+                  <GraduationCap className="w-3.5 h-3.5 text-amber-700" /> Faculty Syllabus Portal
+                </span>
+                <p className="text-xs text-gray-500 mt-1.5">Enter Institute Passcode to update weekly syllabus logs</p>
+              </div>
+
+              {!passcodeVerified ? (
+                <form onSubmit={handleFacultyVerify} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Faculty Passcode</label>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        value={passcode}
+                        onChange={(e) => setPasscode(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all text-center tracking-widest text-lg"
+                        placeholder="••••"
+                        maxLength={10}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Verifying...' : 'Enter'}
+                  </button>
+                  <p className="text-xs text-center text-gray-400">Passcode is set and managed by Superadmin in Faculty Settings.</p>
+                </form>
+              ) : (
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Name</label>
+                    <select
+                      value={selectedFaculty}
+                      onChange={(e) => setSelectedFaculty(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#5B4B8A] focus:border-transparent outline-none transition-all bg-white"
+                      required
+                    >
+                      <option value="">-- Choose Name --</option>
+                      {facultyList.map((faculty) => (
+                        <option key={faculty.id} value={faculty.id}>
+                          {faculty.name} ({faculty.subject})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleFacultyContinue}
+                    disabled={loading || !selectedFaculty}
+                    className="w-full bg-[#5B4B8A] hover:bg-[#4A3D73] text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Loading...' : 'Continue to Dashboard'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -531,12 +674,20 @@ export default function LoginPage() {
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
-              onClick={() => handleLaunchDemo('admin')}
+              onClick={() => handleLaunchDemo('superadmin')}
               disabled={loading}
               className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
             >
               <span>👑 Superadmin</span>
-              <span className="text-[10px] text-gray-400">/admin</span>
+              <span className="text-[10px] text-gray-400">Master</span>
+            </button>
+            <button
+              onClick={() => handleLaunchDemo('admin_staff')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+            >
+              <span>🛡️ Admin (Vikas)</span>
+              <span className="text-[10px] text-gray-400">Academic</span>
             </button>
             <button
               onClick={() => handleLaunchDemo('faculty')}
@@ -562,14 +713,15 @@ export default function LoginPage() {
               <span>📍 Ludhiana CRM</span>
               <span className="text-[10px] text-gray-400">Sales</span>
             </button>
+            <button
+              onClick={() => handleLaunchDemo('sales', 'Jagraon')}
+              disabled={loading}
+              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+            >
+              <span>📍 Jagraon CRM</span>
+              <span className="text-[10px] text-gray-400">Sales</span>
+            </button>
           </div>
-          <button
-            onClick={() => handleLaunchDemo('sales', 'Jagraon')}
-            disabled={loading}
-            className="w-full mt-2 p-2 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-center text-xs disabled:opacity-50 shadow-xs"
-          >
-            📍 Jagraon CRM (/sales/Jagraon)
-          </button>
         </div>
       </div>
       </div>
