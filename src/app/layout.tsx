@@ -3,7 +3,7 @@ import './globals.css';
 import DemoBanner from '@/components/DemoBanner';
 
 export const metadata: Metadata = {
-  title: 'DSP & DSC ERP & CRM',
+  title: 'ERP & CRM',
   description: 'Academic ERP & Branch CRM for Coaching Institutes',
 };
 

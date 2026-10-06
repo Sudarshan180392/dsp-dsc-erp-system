@@ -43,87 +43,97 @@ export async function POST(request: Request) {
       normalizedEmail = aliasMap[normalizedEmail] || `${normalizedEmail}@dspdsc.com`;
     }
 
-    try {
-      const supabase = await createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
+    const isSupabaseConfigured =
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
 
-      if (!error && data?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, branch, full_name')
-          .eq('id', data.user.id)
-          .single();
+    if (isSupabaseConfigured) {
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
 
-        if (profile) {
-          const res = NextResponse.json({
-            success: true,
-            userId: data.user.id,
-            role: profile.role,
-            branch: profile.branch,
-            fullName: profile.full_name,
-          });
-          res.cookies.set('staff_session', JSON.stringify({
-            userId: data.user.id,
-            role: profile.role,
-            branch: profile.branch,
-            fullName: profile.full_name,
-            email: normalizedEmail,
-          }), {
-            path: '/',
-            maxAge: 60 * 60 * 24,
-            httpOnly: false,
-            sameSite: 'lax',
-          });
-          return res;
+        if (error) {
+          // Reject invalid credentials immediately - do NOT fall back or bypass
+          return NextResponse.json({ 
+            success: false, 
+            error: error.message || 'Invalid email or password' 
+          }, { status: 401 });
         }
+
+        if (data?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role, branch, full_name')
+            .eq('id', data.user.id)
+            .single();
+
+          if (profile) {
+            const res = NextResponse.json({
+              success: true,
+              userId: data.user.id,
+              role: profile.role,
+              branch: profile.branch,
+              fullName: profile.full_name,
+            });
+            res.cookies.set('staff_session', JSON.stringify({
+              userId: data.user.id,
+              role: profile.role,
+              branch: profile.branch,
+              fullName: profile.full_name,
+              email: normalizedEmail,
+            }), {
+              path: '/',
+              maxAge: 60 * 60 * 24,
+              httpOnly: false,
+              sameSite: 'lax',
+            });
+            return res;
+          }
+        }
+      } catch (authErr: any) {
+        console.error('Supabase authentication error:', authErr);
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Authentication service unavailable. Please check your network connection.' 
+        }, { status: 503 });
       }
-    } catch {
-      // Supabase offline / preview mode fallback
     }
 
-    // Frontend Preview Mode fallback:
-    let resolvedUser: { role: string; branch: string | null; fullName: string; userId: string } | null = null;
+    // STRICT OFFLINE PREVIEW MODE (Only active if Supabase is completely unconfigured)
+    const PREVIEW_PASSWORDS: Record<string, string> = {
+      'superadmin@dspdsc.com': 'superadmin@dspdsc',
+      'admin@dspdsc.com': 'superadmin@dspdsc',
+      'admin.vikas@dspdsc.com': 'vikas@admin123',
+      'head.jal@dspdsc.com': 'head.jal@123',
+      'head.ldh@dspdsc.com': 'head.ldh@123',
+      'head.jag@dspdsc.com': 'head.jag@123',
+      'sales.jal@dspdsc.com': 'rohit@dspdsc',
+      'sales.ldh@dspdsc.com': 'priya@dspdsc',
+      'sales.jag@dspdsc.com': 'simran@dspdsc',
+    };
 
-    if (PREVIEW_STAFF_USERS[normalizedEmail]) {
-      const u = PREVIEW_STAFF_USERS[normalizedEmail];
-      resolvedUser = {
-        userId: 'preview-' + normalizedEmail,
-        role: u.role,
-        branch: u.branch,
-        fullName: u.fullName,
-      };
-    } else if (normalizedEmail.includes('superadmin')) {
-      resolvedUser = {
-        userId: 'preview-superadmin',
-        role: 'SUPERADMIN',
-        branch: null,
-        fullName: 'Superadmin (Director)',
-      };
-    } else if (normalizedEmail.includes('admin') || normalizedEmail.includes('vikas')) {
-      resolvedUser = {
-        userId: 'preview-admin',
-        role: 'ADMIN',
-        branch: null,
-        fullName: 'Academic Admin',
-      };
-    } else if (normalizedEmail.includes('sales') || normalizedEmail.includes('rep')) {
-      resolvedUser = {
-        userId: 'preview-sales',
-        role: 'SALES_REP',
-        branch: 'Jalandhar',
-        fullName: 'Sales Representative',
-      };
-    } else {
-      resolvedUser = {
-        userId: 'preview-demo',
-        role: 'BRANCH_HEAD',
-        branch: 'Jalandhar',
-        fullName: 'Demo Staff (Jalandhar)',
-      };
+    const expectedPassword = PREVIEW_PASSWORDS[normalizedEmail];
+    if (!expectedPassword || password !== expectedPassword) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid email or password' 
+      }, { status: 401 });
     }
+
+    const u = PREVIEW_STAFF_USERS[normalizedEmail];
+    if (!u) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    const resolvedUser = {
+      userId: 'preview-' + normalizedEmail,
+      role: u.role,
+      branch: u.branch,
+      fullName: u.fullName,
+    };
 
     const res = NextResponse.json({
       success: true,

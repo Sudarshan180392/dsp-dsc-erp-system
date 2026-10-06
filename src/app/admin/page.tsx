@@ -1,4 +1,5 @@
-import { Users, UserPlus, BookOpen, GraduationCap } from "lucide-react";
+import Link from "next/link";
+import { Users, UserPlus, BookOpen, GraduationCap, KeyRound, ArrowRight, Shield, Briefcase, Settings, Lock } from "lucide-react";
 
 export default function AdminDashboard() {
   const kpis = [
@@ -22,7 +23,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-200">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900">Superadmin Master Console</h1>
@@ -30,7 +31,161 @@ export default function AdminDashboard() {
               👑 Master Authority
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">Cross-branch operations, enrollment performance & institutional compliance</p>
+          <p className="text-sm text-gray-500 mt-1">Cross-branch operations, user administration & institutional compliance</p>
+        </div>
+
+        {/* Quick Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/settings"
+            className="px-3.5 py-2 bg-purple-900 hover:bg-black text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <Lock className="w-3.5 h-3.5 text-purple-200" />
+            <span>Master Password & Security</span>
+          </Link>
+          <Link
+            href="/admin/users"
+            className="px-3.5 py-2 bg-[#5B4B8A] hover:bg-[#4a3b73] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <Users className="w-4 h-4" />
+            <span>Manage Users</span>
+          </Link>
+          <Link
+            href="/admin/courses"
+            className="px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <BookOpen className="w-4 h-4 text-[#5B4B8A]" />
+            <span>Courses</span>
+          </Link>
+          <Link
+            href="/admin/faculty-settings"
+            className="px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+          >
+            <KeyRound className="w-4 h-4 text-[#5B4B8A]" />
+            <span>Faculty Passcode</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* SUPERADMIN MASTER ACTION CARDS (CLICK TO MAKE CHANGES) */}
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100 rounded-2xl p-5 shadow-xs">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-[#5B4B8A]" />
+            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+              ⚡ Superadmin Master Actions (Click to Make Changes)
+            </h2>
+          </div>
+          <span className="text-xs text-purple-700 font-semibold bg-white/80 px-2.5 py-0.5 rounded-full border border-purple-200">
+            Full Editing Controls
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-left">
+          <Link
+            href="/admin/settings"
+            className="p-4 bg-white hover:bg-purple-50/60 rounded-xl border-2 border-purple-300 shadow-xs hover:border-[#5B4B8A] transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <Lock className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#5B4B8A]">
+                Master Password & Security
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Change Superadmin password, update Director email & institute branding.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-[#5B4B8A]">
+              <span>Make Changes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/users"
+            className="p-4 bg-white hover:bg-purple-50/60 rounded-xl border border-purple-200 shadow-xs hover:border-[#5B4B8A] transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-8 h-8 rounded-lg bg-purple-100 text-[#5B4B8A] flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#5B4B8A]">
+                User & Password Management
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Add Admins, Branch Heads, Sales Reps. 1-Click view & reset passwords.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-[#5B4B8A]">
+              <span>Make Changes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/courses"
+            className="p-4 bg-white hover:bg-purple-50/60 rounded-xl border border-purple-200 shadow-xs hover:border-[#5B4B8A] transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#5B4B8A]">
+                Courses & Batches
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Create new courses, batch start & target end dates, assign faculty.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-[#5B4B8A]">
+              <span>Make Changes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/faculty-settings"
+            className="p-4 bg-white hover:bg-purple-50/60 rounded-xl border border-purple-200 shadow-xs hover:border-[#5B4B8A] transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <KeyRound className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#5B4B8A]">
+                Faculty Passcode & Roster
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Change the Institute Faculty Passcode. Add/edit teachers and subjects.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-[#5B4B8A]">
+              <span>Make Changes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/sales"
+            className="p-4 bg-white hover:bg-purple-50/60 rounded-xl border border-purple-200 shadow-xs hover:border-[#5B4B8A] transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <Briefcase className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#5B4B8A]">
+                Master Sales Pipeline
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                Review and manage all leads across Jalandhar, Ludhiana, and Jagraon.
+              </p>
+            </div>
+            <div className="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-semibold text-[#5B4B8A]">
+              <span>Make Changes</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
         </div>
       </div>
 

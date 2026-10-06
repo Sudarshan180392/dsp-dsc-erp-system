@@ -35,6 +35,7 @@ export default function AdminSidebar({ role, fullName, permissions }: AdminSideb
 
   const allNavLinks = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, requiredPerm: null },
+    { name: "Settings & Security", href: "/admin/settings", icon: Shield, requiredPerm: "superadmin_only" },
     { name: "User Management", href: "/admin/users", icon: Users, requiredPerm: "user_management" },
     { name: "Faculty Settings", href: "/admin/faculty-settings", icon: Settings, requiredPerm: "faculty_settings" },
     { name: "Courses", href: "/admin/courses", icon: BookOpen, requiredPerm: "courses" },
@@ -43,6 +44,7 @@ export default function AdminSidebar({ role, fullName, permissions }: AdminSideb
   ];
 
   const visibleLinks = allNavLinks.filter((link) => {
+    if (link.requiredPerm === "superadmin_only") return isSuperadmin;
     if (!link.requiredPerm) return true;
     if (isSuperadmin) return true;
     // For Admins: check permissions object (defaults allow all unless explicitly false)

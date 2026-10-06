@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [facultyList, setFacultyList] = useState<any[]>([]);
   const [selectedFaculty, setSelectedFaculty] = useState<string>('');
   const [passcodeVerified, setPasscodeVerified] = useState(false);
+  const [showDemoPreview, setShowDemoPreview] = useState(false);
 
   const router = useRouter();
 
@@ -416,12 +417,6 @@ export default function LoginPage() {
                 </svg>
                 <span>Continue with Google (Optional for Superadmin)</span>
               </button>
-
-              <div className="bg-purple-50 p-3 rounded-xl border border-purple-200 text-xs text-purple-900 space-y-1 text-left">
-                <p className="font-bold text-purple-900 flex items-center gap-1.5">👑 Superadmin Default Credentials:</p>
-                <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin</code></p>
-                <p>Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-purple-200">superadmin@dspdsc</code></p>
-              </div>
             </div>
           )}
 
@@ -469,18 +464,6 @@ export default function LoginPage() {
                   {!loading && <LogIn className="w-4 h-4" />}
                 </button>
               </form>
-
-              <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-xs text-indigo-900 space-y-1 text-left">
-                <div className="flex items-center justify-between">
-                  <p className="font-bold text-indigo-900">🛡️ Academic Admin Credentials:</p>
-                  <span className="text-[10px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-semibold">Created by Superadmin</span>
-                </div>
-                {/* <p>Login: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">admin.vikas@dspdsc.com</code> or <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas</code></p>
-                <p>Password: <code className="bg-white px-1.5 py-0.5 rounded font-bold text-gray-900 border border-indigo-200">vikas@admin123</code></p>
-                <p className="text-[11px] text-indigo-700 pt-1 border-t border-indigo-200/60">
-                  Note: Admins cannot reset Superadmin passwords or other Admins.
-                </p> */}
-              </div>
             </div>
           )}
 
@@ -523,11 +506,6 @@ export default function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign In as Branch Head'}
                 {!loading && <LogIn className="w-4 h-4" />}
               </button>
-              <div className="bg-blue-50 p-2.5 rounded-lg border border-blue-100 text-[11px] text-blue-800 text-center space-y-0.5">
-                <p className="font-semibold">Branch Head Credentials: <code className="bg-white px-1 rounded">Contact Admin </code></p>
-                {/* <p>Jalandhar: <code className="bg-white px-1 rounded">Contact Admin for further details</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">Contact Admin </code></p>
-                <p>Jagraon: <code className="bg-white px-1 rounded">Contact Admin for further details</code></p> */}
-              </div>
             </form>
           )}
 
@@ -584,11 +562,6 @@ export default function LoginPage() {
                 {loading ? 'Signing in...' : 'Sign In as Sales Rep'}
                 {!loading && <LogIn className="w-4 h-4" />}
               </button>
-              <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 text-[11px] text-emerald-800 text-center space-y-0.5">
-                <p className="font-semibold">Quick Preview Credentials:</p>
-                <p>Jalandhar: <code className="bg-white px-1 rounded">sales.jal</code> &bull; Ludhiana: <code className="bg-white px-1 rounded">sales.ldh</code> &bull; Jagraon: <code className="bg-white px-1 rounded">sales.jag</code></p>
-                <p className="text-emerald-700">(Any password works in preview mode)</p>
-              </div>
             </form>
           )}
 
@@ -659,69 +632,85 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Quick Frontend Preview Navigation */}
-        <div className="bg-gray-50 p-6 border-t border-gray-100 text-center">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-              Frontend UI Preview (Sales & Pitch Demo)
-            </p>
-            <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full border border-amber-200">
-              Demo Data Isolated
+        {/* Collapsible Frontend Preview for Sales & Pitch Demos */}
+        <div className="bg-gray-50 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setShowDemoPreview(!showDemoPreview)}
+            className="w-full py-3 px-6 text-xs text-gray-500 hover:text-gray-800 flex items-center justify-between font-medium transition-colors bg-gray-50/80 hover:bg-gray-100/70"
+          >
+            <span className="flex items-center gap-2">
+              <span className="text-gray-600 font-semibold">💼 Pitch Demo / Sales Preview Mode</span>
+              <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Mock Data Isolated</span>
             </span>
-          </div>
-          <p className="text-[11px] text-gray-500 mb-3 text-left">
-            Pitch and test pre-populated sample academy data without affecting the live ERP database:
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <button
-              onClick={() => handleLaunchDemo('superadmin')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>👑 Superadmin</span>
-              <span className="text-[10px] text-gray-400">Master</span>
-            </button>
-            <button
-              onClick={() => handleLaunchDemo('admin_staff')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>🛡️ Admin (Vikas)</span>
-              <span className="text-[10px] text-gray-400">Academic</span>
-            </button>
-            <button
-              onClick={() => handleLaunchDemo('faculty')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>👨‍🏫 Faculty Portal</span>
-              <span className="text-[10px] text-gray-400">/faculty</span>
-            </button>
-            <button
-              onClick={() => handleLaunchDemo('sales', 'Jalandhar')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>📍 Jalandhar CRM</span>
-              <span className="text-[10px] text-gray-400">Sales</span>
-            </button>
-            <button
-              onClick={() => handleLaunchDemo('sales', 'Ludhiana')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>📍 Ludhiana CRM</span>
-              <span className="text-[10px] text-gray-400">Sales</span>
-            </button>
-            <button
-              onClick={() => handleLaunchDemo('sales', 'Jagraon')}
-              disabled={loading}
-              className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
-            >
-              <span>📍 Jagraon CRM</span>
-              <span className="text-[10px] text-gray-400">Sales</span>
-            </button>
-          </div>
+            <span className="text-[11px] text-[#5B4B8A] font-bold">
+              {showDemoPreview ? 'Close ▲' : 'Open Demo ▼'}
+            </span>
+          </button>
+
+          {showDemoPreview && (
+            <div className="p-6 pt-3 text-center border-t border-gray-100 bg-white/50 animate-in fade-in duration-200">
+              <p className="text-[11px] text-gray-500 mb-3 text-left">
+                Test pre-populated sample academy records for investor/sales pitches without affecting live production data:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('superadmin')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>👑 Superadmin</span>
+                  <span className="text-[10px] text-gray-400">Master</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('admin_staff')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>🛡️ Admin (Vikas)</span>
+                  <span className="text-[10px] text-gray-400">Academic</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('faculty')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>👨‍🏫 Faculty Portal</span>
+                  <span className="text-[10px] text-gray-400">/faculty</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('sales', 'Jalandhar')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>📍 Jalandhar CRM</span>
+                  <span className="text-[10px] text-gray-400">Sales</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('sales', 'Ludhiana')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>📍 Ludhiana CRM</span>
+                  <span className="text-[10px] text-gray-400">Sales</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchDemo('sales', 'Jagraon')}
+                  disabled={loading}
+                  className="p-2.5 bg-white hover:bg-[#5B4B8A] hover:text-white border border-gray-200 rounded-lg text-gray-700 font-medium transition text-left flex items-center justify-between disabled:opacity-50 shadow-xs"
+                >
+                  <span>📍 Jagraon CRM</span>
+                  <span className="text-[10px] text-gray-400">Sales</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </div>
